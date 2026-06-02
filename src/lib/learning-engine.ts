@@ -79,8 +79,9 @@ export function calculateAccuracy(
 
   if (allRatios.length === 0) return null;
 
-  // Accuracy = 1 - mean(|ratio - 1|)
-  const errors = allRatios.map((r) => Math.abs(r - 1));
+  // Accuracy = 1 - mean(|estimated - actual| / actual)
+  // With ratio = actual/estimated, this becomes |ratio - 1| / ratio
+  const errors = allRatios.map((r) => Math.abs(r - 1) / r);
   const meanError = errors.reduce((sum, e) => sum + e, 0) / errors.length;
   const accuracy = 1 - meanError;
 

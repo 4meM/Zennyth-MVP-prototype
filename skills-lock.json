@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "lean-startup": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "1564146a8058a241c08b55c4ba0d43268563a6334e095c6c6a89458dfabe2e52"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "0a413bf988d06481f69bb81df2070741c3ba12dd9f1be2706d57f259c905992d"
+    }
+  }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useZenStore } from "@/lib/store";
 import { ZenCoachWidget } from "@/components/coach/zen-coach-widget";
 import { Timeline } from "@/components/dashboard/timeline";
@@ -15,7 +16,17 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const { tasks, user } = useZenStore();
+  const { tasks, user, autoSchedule } = useZenStore();
+
+  // Auto-schedule on mount so tasks have scheduledStart/scheduledEnd
+  useEffect(() => {
+    const hasUnscheduled = tasks.some(
+      (t) => t.status !== "COMPLETED" && !t.scheduledStart
+    );
+    if (hasUnscheduled) {
+      autoSchedule();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = new Date();
   const dayName = today.toLocaleDateString("es", { weekday: "long" });
