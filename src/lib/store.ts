@@ -58,9 +58,10 @@ interface ZenStore {
   canLinkFocusTask: () => boolean;
 
   // Actions
+  
   setUser: (user: Partial<User>) => void;
   completeOnboarding: (name: string, university: string) => void;
-
+  updateTaskStatus: (id: string, status: TaskStatus) => void;
   addTask: (
     title: string,
     deadline: string,
@@ -78,7 +79,7 @@ interface ZenStore {
   setAdvice: (advice: string) => void;
   setLoadingAdvice: (loading: boolean) => void;
   trackCoachRequest: () => void;
-
+  
   // Time Learning actions
   updateSubjectLearning: (subject: string, estimatedHours: number, actualHours: number) => void;
 
@@ -315,6 +316,12 @@ export const useZenStore = create<ZenStore>()(
       deleteTask: (id) =>
         set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) })),
 
+      updateTaskStatus: (id, status) =>
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === id ? { ...t, status } : t
+          ),
+        })),
       autoSchedule: () => {
         const state = get();
         const fixedEvents = state.events.filter((e) => e.isFixed);

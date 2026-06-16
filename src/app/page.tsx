@@ -3,22 +3,20 @@
 import { useEffect } from "react";
 import { useZenStore } from "@/lib/store";
 import { ZenCoachWidget } from "@/components/coach/zen-coach-widget";
-import { Timeline } from "@/components/dashboard/timeline";
 import { StreakBadge } from "@/components/dashboard/streak-badge";
-import { MananaCard } from "@/components/manana/manana-card";
-import { ProgressiveBacklog } from "@/components/manana/progressive-backlog";
 import { RescueButton } from "@/components/manana/rescue-button";
 import { TimeAccuracyBadge } from "@/components/manana/time-accuracy-badge";
 import { DailyBanner } from "@/components/manana/daily-banner";
 import { ShareStats } from "@/components/ui/share-stats";
 import { NpsPrompt } from "@/components/ui/nps-prompt";
-import { Plus } from "lucide-react";
-import Link from "next/link";
+
+import { VelocityChart } from "../app/analytics/velocity-chart";
+import { KanbanBoard } from "../app/analytics/kanban-board";
+import { DailyAgenda } from "../app/analytics/daily-agenda"; 
 
 export default function DashboardPage() {
-  const { tasks, user, autoSchedule } = useZenStore();
+  const { tasks, autoSchedule } = useZenStore();
 
-  // Auto-schedule on mount so tasks have scheduledStart/scheduledEnd
   useEffect(() => {
     const hasUnscheduled = tasks.some(
       (t) => t.status !== "COMPLETED" && !t.scheduledStart
@@ -29,72 +27,57 @@ export default function DashboardPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = new Date();
-  const dayName = today.toLocaleDateString("es", { weekday: "long" });
-  const dateStr = today.toLocaleDateString("es", {
-    day: "numeric",
-    month: "long",
+  const dateStr = today.toLocaleDateString("es", { day: "numeric", month: "long" });
+  const dayNameCapitalized = today.toLocaleDateString("es", { weekday: "long" }).charAt(0).toUpperCase() + today.toLocaleDateString("es", { weekday: "long" }).slice(1);
+
+  // Preparamos las tareas para la Agenda visual
+  const agendaTasksToPass = tasks.filter(t => t.scheduledStart).map(t => {
+    const d = new Date(t.scheduledStart!);
+    return {
+      id: t.id,
+      title: t.title,
+      priority: t.calculatedPriority || 5,
+      startH: d.getHours(),
+      startM: d.getMinutes(),
+      duration: (t.metrics?.timeRequired || 1) * 60
+    };
   });
 
-  // Capitalize first letter of day name
-  const dayNameCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-
   return (
-    <div className="animate-fade-in space-y-4">
-      {/* Daily notification banner */}
+    <div className="animate-fade-in space-y-8 pb-12">
       <DailyBanner />
 
-      {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-text-1">
-            Mañana, {dayNameCapitalized}
-          </h1>
+          <h1 className="text-2xl font-bold text-text-1">Mañana, {dayNameCapitalized}</h1>
           <p className="text-sm text-text-2 mt-0.5 capitalize">{dateStr}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <TimeAccuracyBadge />
           <ShareStats />
           <RescueButton />
         </div>
       </div>
 
+      {/* 1. Gráfico Superior a todo ancho */}
+      <div className="w-full">
+        <VelocityChart />
+      </div>
+
       <StreakBadge />
       <NpsPrompt />
 
-      {/* Main Mañana view */}
-      <MananaCard tasks={tasks} />
-
-      {/* Secondary: progressive backlog */}
-      <div className="pt-2">
-        <ProgressiveBacklog />
+      {/* 2. Tablero Kanban a todo ancho justo debajo de los datos */}
+      <div className="w-full mt-4">
+        <KanbanBoard />
       </div>
 
-      {/* Below fold: keep existing widgets but de-emphasized */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-border">
-        <section className="lg:col-span-2 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-text-2 uppercase tracking-wider">
-              Todas las tareas
-            </h2>
-            <Link href="/tasks/new">
-              <span className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-semibold cursor-pointer transition-colors">
-                <Plus className="w-3.5 h-3.5" />
-                Agregar
-              </span>
-            </Link>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-xs font-bold text-text-2 uppercase tracking-wider mb-3">
-            Hoy
-          </h2>
-          <Timeline />
-        </section>
+      {/* 3. Línea de tiempo (Agenda) a todo ancho en la parte inferior */}
+      <div className="w-full mt-8">
+        <DailyAgenda tasks={agendaTasksToPass.length > 0 ? agendaTasksToPass : undefined} />
       </div>
 
-      {/* Coach widget — de-emphasized */}
-      <div className="pt-2 opacity-80">
+      <div className="pt-8 opacity-80 max-w-2xl">
         <ZenCoachWidget />
       </div>
     </div>
