@@ -124,6 +124,7 @@ export interface UsageMetrics {
 export const FREE_TIER_LIMITS = {
   maxTasks: 5,
   maxCoachRequests: 3, // per day
+  maxWorkspaces: 1, // free tier capped; pro tier is unlimited
   focusTimerLinked: false,
   energyAwareScheduling: false,
   advancedAnalytics: false,
