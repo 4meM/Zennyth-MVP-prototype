@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Users } from "lucide-react";
 
 export interface AgendaTask {
   id: string;
@@ -13,6 +13,11 @@ export interface AgendaTask {
   duration: number;
 }
 
+export interface GroupAgendaTask {
+  id: string;
+  title: string;
+}
+
 const MOCK_TASKS: AgendaTask[] = [
   { id: "1", title: "Estudiar para parcial de Cálculo", priority: 9, startH: 9, startM: 0, duration: 180 },
   { id: "3", title: "Ensayo de Historia del Arte", priority: 3, startH: 16, startM: 0, duration: 120 },
@@ -20,9 +25,10 @@ const MOCK_TASKS: AgendaTask[] = [
 
 interface DailyAgendaProps {
   tasks?: AgendaTask[];
+  groupTasks?: GroupAgendaTask[];
 }
 
-export function DailyAgenda({ tasks }: DailyAgendaProps) {
+export function DailyAgenda({ tasks, groupTasks }: DailyAgendaProps) {
   // Ahora usamos las 24 horas para que el calendario sea real
   const startHour = 0;
   const endHour = 24; 
@@ -71,8 +77,28 @@ export function DailyAgenda({ tasks }: DailyAgendaProps) {
         </div>
       </div>
 
+      {/* Tareas grupales del día — banner fijo arriba del timeline */}
+      {groupTasks && groupTasks.length > 0 && (
+        <div className="mb-3 p-3 rounded-lg bg-accent-subtle/40 border border-accent/30">
+          <h3 className="text-[11px] font-bold text-accent uppercase tracking-wider flex items-center gap-1.5 mb-2">
+            <Users className="w-3.5 h-3.5" />
+            Tareas grupales de hoy
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {groupTasks.map((gt) => (
+              <span
+                key={gt.id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-accent/10 text-accent border border-accent/20"
+              >
+                {gt.title}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* CONTENEDOR CON SCROLL (overflow-y-auto) */}
-      <div 
+      <div
         ref={scrollRef}
         className="relative w-full overflow-y-auto custom-scrollbar bg-surface rounded-lg border border-border flex-1 scroll-smooth"
       >

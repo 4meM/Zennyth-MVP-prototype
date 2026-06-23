@@ -13,34 +13,26 @@ import { NpsPrompt } from "@/components/ui/nps-prompt";
 
 import { VelocityChart } from "../app/analytics/velocity-chart";
 import { KanbanBoard } from "../app/analytics/kanban-board";
-import { DailyAgenda, AgendaTask } from "../app/analytics/daily-agenda";
+import { DailyAgenda, AgendaTask, GroupAgendaTask } from "../app/analytics/daily-agenda";
 
 /**
- * Group-task → agenda-task conversion.
+ * Build the list of group tasks due today that are visible to the
+ * current member. These are shown in a dedicated banner ABOVE the
+ * timeline — they do NOT occupy a fixed hour slot.
  *
- * We pull workspace tasks that are due today AND either unassigned or
- * assigned to the current member. The "current member" is the
- * last-joined member in a workspace (single-device MVP assumption).
- *
- * Group tasks are pinned at 08:00 so they appear at the top of the
- * timeline where the user sees them immediately upon opening the app.
- * The deadline date drives *visibility* (is it due today?); the time
- * of day is intentionally fixed, not derived from the deadline clock.
- *
- * Priority is fixed at 5 (middle of the visual scale) so group work sits
- * clearly between high- and low-priority individual tasks, never
- * overshadowing either.
+ * The "current member" is the last-joined member in a workspace
+ * (single-device MVP assumption).
  */
 function buildGroupAgendaTasks(
   workspaces: ReturnType<typeof useWorkspaceStore.getState>["workspaces"],
   today: Date
-): AgendaTask[] {
+): GroupAgendaTask[] {
   const startOfDay = new Date(today);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(today);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const out: AgendaTask[] = [];
+  const out: GroupAgendaTask[] = [];
 
   for (const ws of workspaces) {
     const currentMember = ws.members[ws.members.length - 1];
@@ -60,11 +52,7 @@ function buildGroupAgendaTasks(
 
       out.push({
         id: `grp-${t.id}`,
-        title: `[Grupo] ${t.title}`,
-        priority: 5,
-        startH: 8,
-        startM: 0,
-        duration: 60,
+        title: t.title,
       });
     }
   }
@@ -107,12 +95,8 @@ export default function DashboardPage() {
     };
   });
 
-  // Concatenar tareas del grupo (due today, visible to the current member).
+  // Tareas grupales visibles hoy (banner arriba del timeline, no bloques de hora).
   const groupAgendaTasks = buildGroupAgendaTasks(workspaces, today);
-  const agendaTasksToPass: AgendaTask[] = [
-    ...individualAgendaTasks,
-    ...groupAgendaTasks,
-  ];
 
   return (
     <div className="animate-fade-in space-y-8 pb-12">
@@ -146,7 +130,8 @@ export default function DashboardPage() {
       {/* 3. Línea de tiempo (Agenda) a todo ancho en la parte inferior */}
       <div className="w-full mt-8">
         <DailyAgenda
-          tasks={agendaTasksToPass.length > 0 ? agendaTasksToPass : undefined}
+          tasks={individualAgendaTasks.length > 0 ? individualAgendaTasks : undefined}
+          groupTasks={groupAgendaTasks.length > 0 ? groupAgendaTasks : undefined}
         />
       </div>
 
