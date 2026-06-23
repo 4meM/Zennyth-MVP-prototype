@@ -34,11 +34,12 @@ Build gate for `collaborative-study-workspace`. PR #3 (workspace data layer) and
 
 | Gate | Status | Decided on | Decided by |
 |---|---|---|---|
-| LVE-1 | PENDING | — | — |
-| LVE-2 | PENDING | — | — |
+| LVE-1 | **BYPASSED** | 2026-06-22 | Developer (solo prototype context) |
+| LVE-2 | **BYPASSED** | 2026-06-22 | Developer (solo prototype context) |
 
-**Proceed to PR #3 (workspace data layer)?** **NO** — both gates must PASS first.
+**Proceed to PR #3 (workspace data layer)?** **YES** — gates bypassed by explicit developer decision. Solo developer building prototype; teammates handling other tasks. Validation experiments deferred to post-MVP.
 
 ## Change Log
 
 - 2026-06-22 — Gate artifact created. Both gates PENDING. PR #1 (smoke test) ships; data begins accumulating.
+- 2026-06-22 — Gates BYPASSED. Developer is solo-contributor on prototype and needs to ship feature code without waiting for manual validation experiments. Proceeding to PR #3-4 immediately.
