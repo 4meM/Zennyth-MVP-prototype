@@ -11,6 +11,7 @@ import {
   BarChart3,
   Timer,
   Settings,
+  Users,
   Flame,
   Sparkles,
   Zap,
@@ -21,6 +22,7 @@ import {
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Inicio" },
   { href: "/tasks/new", icon: Plus, label: "Nueva Tarea" },
+  { href: "/workspaces", icon: Users, label: "Grupos" },
   { href: "/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/focus", icon: Timer, label: "Focus" },
   { href: "/settings", icon: Settings, label: "Config" },

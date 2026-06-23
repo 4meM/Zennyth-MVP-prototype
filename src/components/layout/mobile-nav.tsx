@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Plus, Timer, Settings } from "lucide-react";
+import { LayoutDashboard, Plus, Timer, Users } from "lucide-react";
 
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Mañana" },
   { href: "/tasks/new", icon: Plus, label: "Nueva", isMain: true },
+  { href: "/workspaces", icon: Users, label: "Grupos" },
   { href: "/focus", icon: Timer, label: "Focus" },
-  { href: "/settings", icon: Settings, label: "Config" },
 ];
 
 export function MobileNav() {
