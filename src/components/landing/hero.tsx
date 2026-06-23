@@ -19,6 +19,7 @@ import {
 export function LandingHero() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [groupInterest, setGroupInterest] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ export function LandingHero() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, groupInterest }),
       });
       const data = await res.json();
       setWaitlistCount(data.count);
@@ -125,6 +126,35 @@ export function LandingHero() {
               </>
             )}
           </div>
+
+          {!submitted && (
+            <label className="flex items-center justify-center gap-2.5 max-w-md mx-auto cursor-pointer select-none group">
+              <span
+                role="checkbox"
+                aria-checked={groupInterest}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
+                    setGroupInterest((v) => !v);
+                  }
+                }}
+                onClick={() => setGroupInterest((v) => !v)}
+                className={`relative inline-flex w-9 h-5 rounded-full transition-colors duration-200 ease-out ${
+                  groupInterest ? "bg-primary" : "bg-bg-subtle border border-border"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-out ${
+                    groupInterest ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </span>
+              <span className="text-xs text-text-2 group-hover:text-text-1 transition-colors text-left">
+                Me interesa coordinar con mi grupo de estudio
+              </span>
+            </label>
+          )}
 
           <p className="text-xs text-text-3">
             O{" "}

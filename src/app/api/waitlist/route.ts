@@ -6,10 +6,21 @@ import path from "path";
 // Replace with a database when you have one.
 const WAITLIST_FILE = path.join(process.cwd(), ".waitlist.json");
 
-async function getWaitlist(): Promise<{ email: string; at: string }[]> {
+type WaitlistEntry = {
+  email: string;
+  at: string;
+  groupInterest?: boolean;
+};
+
+async function getWaitlist(): Promise<WaitlistEntry[]> {
   try {
     const data = await fs.readFile(WAITLIST_FILE, "utf-8");
-    return JSON.parse(data);
+    const parsed = JSON.parse(data) as WaitlistEntry[];
+    // Backfill: any legacy entry without groupInterest counts as not interested.
+    return parsed.map((entry) => ({
+      ...entry,
+      groupInterest: entry.groupInterest ?? false,
+    }));
   } catch {
     return [];
   }
@@ -17,7 +28,7 @@ async function getWaitlist(): Promise<{ email: string; at: string }[]> {
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, groupInterest } = await request.json();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -32,7 +43,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Ya estás en la lista", count: waitlist.length });
     }
 
-    waitlist.push({ email, at: new Date().toISOString() });
+    waitlist.push({
+      email,
+      at: new Date().toISOString(),
+      groupInterest: Boolean(groupInterest),
+    });
     await fs.writeFile(WAITLIST_FILE, JSON.stringify(waitlist, null, 2));
 
     return NextResponse.json({
@@ -50,5 +65,8 @@ export async function POST(request: Request) {
 
 export async function GET() {
   const waitlist = await getWaitlist();
-  return NextResponse.json({ count: waitlist.length });
+  const count = waitlist.length;
+  const groupInterestCount = waitlist.filter((e) => e.groupInterest).length;
+  const ratio = count === 0 ? 0 : groupInterestCount / count;
+  return NextResponse.json({ count, groupInterestCount, ratio });
 }
