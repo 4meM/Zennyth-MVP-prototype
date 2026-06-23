@@ -22,6 +22,11 @@ import { DailyAgenda, AgendaTask } from "../app/analytics/daily-agenda";
  * assigned to the current member. The "current member" is the
  * last-joined member in a workspace (single-device MVP assumption).
  *
+ * Group tasks are pinned at 08:00 so they appear at the top of the
+ * timeline where the user sees them immediately upon opening the app.
+ * The deadline date drives *visibility* (is it due today?); the time
+ * of day is intentionally fixed, not derived from the deadline clock.
+ *
  * Priority is fixed at 5 (middle of the visual scale) so group work sits
  * clearly between high- and low-priority individual tasks, never
  * overshadowing either.
@@ -57,8 +62,8 @@ function buildGroupAgendaTasks(
         id: `grp-${t.id}`,
         title: `[Grupo] ${t.title}`,
         priority: 5,
-        startH: deadline.getHours(),
-        startM: deadline.getMinutes(),
+        startH: 8,
+        startM: 0,
         duration: 60,
       });
     }
