@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useWorkspaceStore } from "@/lib/workspace-store";
 import { cn, daysUntil } from "@/lib/utils";
 import {
   Calendar,
   Check,
+  ChevronDown,
   PartyPopper,
   Split,
   UserPlus,
+  X,
 } from "lucide-react";
 import type {
   GroupTask,
@@ -46,6 +48,10 @@ const STATUS_BORDER: Record<GroupTaskCardProps["statusTone"], string> = {
  *   prevent accidental overwrites (per spec).
  * - Per-subtask row: shows owner (or "Sin asignar"), with "Reclamar" for
  *   unclaimed subtasks and "Completar" for the subtask's owner.
+ * - Individual assignment: the creator of the task is shown as a quiet
+ *   owner badge; a small dropdown lets any member reassign or clear the
+ *   individual responsibility. Unassigned tasks show an "Asignar a..."
+ *   affordance instead.
  * - Celebration: when every subtask is done, a subtle "Logro grupal" badge
  *   appears with `animate-scale-in` (respects prefers-reduced-motion).
  *
@@ -61,10 +67,16 @@ export function GroupTaskCard({
   onDragEnd,
 }: GroupTaskCardProps) {
   const [splitOpen, setSplitOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const claimSubtask = useWorkspaceStore((s) => s.claimSubtask);
   const completeSubtask = useWorkspaceStore((s) => s.completeSubtask);
+  const assignTask = useWorkspaceStore((s) => s.assignTask);
+  const unassignTask = useWorkspaceStore((s) => s.unassignTask);
 
   const owner = members.find((m) => m.id === task.createdBy);
+  const assignee = task.assignedTo
+    ? members.find((m) => m.id === task.assignedTo)
+    : undefined;
   const totalSubtasks = task.subtasks.length;
   const doneSubtasks = task.subtasks.filter((s) => s.status === "DONE").length;
   const allDone = totalSubtasks > 0 && doneSubtasks === totalSubtasks;
@@ -93,12 +105,49 @@ export function GroupTaskCard({
 
         <div className="flex items-center justify-between gap-2 mb-3 text-[10px]">
           <DeadlineBadge iso={task.deadline} />
-          {owner && (
-            <MemberBadge
-              name={owner.name}
-              variant={owner.id === currentMemberId ? "self" : "default"}
-            />
-          )}
+          <div className="flex items-center gap-1.5">
+            {owner && (
+              <MemberBadge
+                name={owner.name}
+                variant={owner.id === currentMemberId ? "self" : "default"}
+              />
+            )}
+            {assignee ? (
+              <AssignDropdown
+                assignedTo={assignee.id}
+                assigneeName={assignee.name}
+                isSelf={assignee.id === currentMemberId}
+                open={assignOpen}
+                onOpenChange={setAssignOpen}
+                members={members}
+                currentMemberId={currentMemberId}
+                onSelect={(memberId) => {
+                  assignTask(workspaceId, task.id, memberId);
+                  setAssignOpen(false);
+                }}
+                onUnassign={() => {
+                  unassignTask(workspaceId, task.id);
+                  setAssignOpen(false);
+                }}
+              />
+            ) : totalSubtasks === 0 ? (
+              <AssignDropdown
+                assignedTo={undefined}
+                assigneeName={undefined}
+                isSelf={false}
+                open={assignOpen}
+                onOpenChange={setAssignOpen}
+                members={members}
+                currentMemberId={currentMemberId}
+                onSelect={(memberId) => {
+                  assignTask(workspaceId, task.id, memberId);
+                  setAssignOpen(false);
+                }}
+                onUnassign={() => setAssignOpen(false)}
+                placeholder
+              />
+            ) : null}
+          </div>
         </div>
 
         {totalSubtasks === 0 ? (
@@ -154,6 +203,172 @@ export function GroupTaskCard({
         onClose={() => setSplitOpen(false)}
       />
     </>
+  );
+}
+
+// ── Assignment dropdown ──────────────────────────────────────────
+
+interface AssignDropdownProps {
+  /** Current assignee id; `undefined` for the unassigned placeholder. */
+  assignedTo?: string;
+  /** Current assignee name; `undefined` renders the unassigned state. */
+  assigneeName?: string;
+  /** True when the current assignee is the local user (drives the variant). */
+  isSelf: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  members: WorkspaceMember[];
+  currentMemberId?: string;
+  onSelect: (memberId: string) => void;
+  onUnassign: () => void;
+  /** When true, render the unassigned placeholder trigger instead of a name. */
+  placeholder?: boolean;
+}
+
+/**
+ * Tiny popover for the individual task assignment. Shows the current
+ * assignee as a clickable chip; clicking opens a list of members to
+ * reassign to. The "Sin asignar" placeholder variant is used when no
+ * assignment exists yet (only on tasks without subtasks, per spec).
+ *
+ * No red, no blame — same MemberBadge visual language as elsewhere.
+ */
+function AssignDropdown({
+  assignedTo,
+  assigneeName,
+  isSelf,
+  open,
+  onOpenChange,
+  members,
+  currentMemberId,
+  onSelect,
+  onUnassign,
+  placeholder,
+}: AssignDropdownProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click.
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        onOpenChange(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open, onOpenChange]);
+
+  // Close on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onOpenChange]);
+
+  return (
+    <div className="relative" ref={rootRef}>
+      <button
+        type="button"
+        draggable={false}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenChange(!open);
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={
+          placeholder
+            ? "Asignar tarea a un miembro"
+            : "Reasignar o desasignar tarea"
+        }
+        className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md"
+      >
+        {placeholder ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold",
+              "bg-bg-subtle text-text-2 hover:bg-surface-hover transition-colors"
+            )}
+          >
+            <UserPlus className="w-2.5 h-2.5" />
+            Asignar a...
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold",
+              isSelf
+                ? "bg-primary-subtle text-primary hover:bg-primary/15"
+                : "bg-bg-subtle text-text-2 hover:bg-surface-hover",
+              "transition-colors"
+            )}
+          >
+            <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+            {assigneeName}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          draggable={false}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute right-0 top-full mt-1.5 z-20 min-w-[180px] rounded-lg border border-border bg-surface shadow-lg p-1 animate-fade-in"
+        >
+          <p className="px-2.5 pt-1.5 pb-1 text-[9px] font-bold uppercase tracking-wider text-text-3">
+            Asignar a
+          </p>
+          {members.map((m) => {
+            const isCurrentAssignee = m.id === assignedTo;
+            const isMe = m.id === currentMemberId;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                role="menuitem"
+                onClick={() => onSelect(m.id)}
+                className={cn(
+                  "w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer",
+                  "hover:bg-bg-subtle",
+                  isCurrentAssignee
+                    ? "text-primary"
+                    : "text-text-1"
+                )}
+              >
+                {m.name}
+                {isMe && (
+                  <span className="text-text-3 ml-1.5 font-normal">(tú)</span>
+                )}
+                {isCurrentAssignee && (
+                  <Check className="w-3 h-3 inline ml-1.5 -mt-0.5" />
+                )}
+              </button>
+            );
+          })}
+          {!placeholder && (
+            <>
+              <div className="h-px bg-border my-1" />
+              <button
+                type="button"
+                role="menuitem"
+                onClick={onUnassign}
+                className="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium text-text-2 hover:bg-bg-subtle transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-3 h-3" />
+                Desasignar
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

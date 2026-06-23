@@ -9,6 +9,7 @@ import type {
   GroupTaskStatus,
   SubTask,
   Workspace,
+  WorkspaceAttachment,
   WorkspaceMember,
   WorkspaceSeed,
 } from "@/types/workspace";
@@ -47,7 +48,22 @@ interface WorkspaceStore {
   setActiveWorkspace: (workspaceId: string | null) => void;
 
   // ─── Task actions ──────────────────────────────────────────
-  addGroupTask: (workspaceId: string, title: string, deadline: string, memberId: string) => void;
+  addGroupTask: (
+    workspaceId: string,
+    title: string,
+    deadline: string,
+    memberId: string,
+    assignedTo?: string
+  ) => void;
+  /**
+   * Assign a task to a specific member (individual responsibility).
+   * Sets `assignedTo` on the task. Replaces any prior assignment.
+   */
+  assignTask: (workspaceId: string, taskId: string, memberId: string) => void;
+  /**
+   * Clear the `assignedTo` field on a task.
+   */
+  unassignTask: (workspaceId: string, taskId: string) => void;
   /**
    * Split a task into N unclaimed SubTasks.
    * Replaces any existing subtasks on the parent task.
@@ -56,6 +72,13 @@ interface WorkspaceStore {
   claimSubtask: (workspaceId: string, taskId: string, subtaskId: string, memberId: string) => void;
   completeSubtask: (workspaceId: string, taskId: string, subtaskId: string) => void;
   updateTaskStatus: (workspaceId: string, taskId: string, status: GroupTaskStatus) => void;
+
+  // ─── Attachment actions ────────────────────────────────────
+  addAttachment: (
+    workspaceId: string,
+    attachment: Omit<WorkspaceAttachment, "id" | "addedAt">
+  ) => void;
+  removeAttachment: (workspaceId: string, attachmentId: string) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceStore>()(
@@ -130,7 +153,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       setActiveWorkspace: (workspaceId) => set({ activeWorkspaceId: workspaceId }),
 
       // ─── Task actions ────────────────────────────────────────
-      addGroupTask: (workspaceId, title, deadline, memberId) =>
+      addGroupTask: (workspaceId, title, deadline, memberId, assignedTo) =>
         set((state) => ({
           workspaces: state.workspaces.map((w) =>
             w.id === workspaceId
@@ -146,12 +169,44 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                       subtasks: [],
                       createdAt: new Date().toISOString(),
                       createdBy: memberId,
+                      ...(assignedTo ? { assignedTo } : {}),
                     } satisfies GroupTask,
                   ],
                 }
               : w
           ),
         })),
+
+      assignTask: (workspaceId, taskId, memberId) =>
+        set((state) => ({
+          workspaces: state.workspaces.map((w) =>
+            w.id === workspaceId
+              ? {
+                  ...w,
+                  tasks: w.tasks.map((t) =>
+                    t.id === taskId ? { ...t, assignedTo: memberId } : t
+                  ),
+                }
+              : w
+          ),
+        })),
+
+      unassignTask: (workspaceId, taskId) =>
+        set((state) => {
+          // Strip the `assignedTo` key entirely (do not leave `assignedTo: undefined`).
+          const stripAssigned = (t: GroupTask): GroupTask => {
+            if (t.id !== taskId) return t;
+            const { assignedTo: _drop, ...rest } = t;
+            return rest as GroupTask;
+          };
+          return {
+            workspaces: state.workspaces.map((w) =>
+              w.id === workspaceId
+                ? { ...w, tasks: w.tasks.map(stripAssigned) }
+                : w
+            ),
+          };
+        }),
 
       splitTask: (workspaceId, taskId, count) =>
         set((state) => ({
@@ -238,6 +293,38 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                 }
               : w
           ),
+        })),
+
+      // ─── Attachment actions ──────────────────────────────────
+      addAttachment: (workspaceId, attachment) =>
+        set((state) => ({
+          workspaces: state.workspaces.map((w) => {
+            if (w.id !== workspaceId) return w;
+            const next: WorkspaceAttachment = {
+              ...attachment,
+              id: generateId(),
+              addedAt: new Date().toISOString(),
+            };
+            return {
+              ...w,
+              attachments: [...(w.attachments ?? []), next],
+            };
+          }),
+        })),
+
+      removeAttachment: (workspaceId, attachmentId) =>
+        set((state) => ({
+          workspaces: state.workspaces.map((w) => {
+            if (w.id !== workspaceId) return w;
+            if (!w.attachments) return w;
+            const filtered = w.attachments.filter((a) => a.id !== attachmentId);
+            // If the array is empty, drop the key entirely to keep state tidy.
+            if (filtered.length === 0) {
+              const { attachments: _drop, ...rest } = w;
+              return rest as Workspace;
+            }
+            return { ...w, attachments: filtered };
+          }),
         })),
     }),
     { name: "zennyth-workspaces" }

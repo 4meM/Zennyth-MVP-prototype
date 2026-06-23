@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Users } from "lucide-react";
 import { WorkspaceHeader } from "@/components/workspaces/workspace-header";
 import { WorkspaceBoard } from "@/components/workspaces/workspace-board";
+import { WorkspaceResources } from "@/components/workspaces/workspace-resources";
 
 export default function WorkspaceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -69,6 +70,7 @@ export default function WorkspaceDetailPage() {
 
       <WorkspaceHeader workspaceId={id} />
       <WorkspaceBoard workspaceId={id} />
+      <WorkspaceResources workspaceId={id} />
     </div>
   );
 }

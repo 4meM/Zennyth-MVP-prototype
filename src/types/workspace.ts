@@ -29,6 +29,19 @@ export interface GroupTask {
   subtasks: SubTask[];
   createdAt: string;
   createdBy: string; // member ID
+  /** Member ID individually responsible for this task (in addition to any subtask owners). */
+  assignedTo?: string;
+}
+
+export type WorkspaceAttachmentType = "link" | "gdrive";
+
+export interface WorkspaceAttachment {
+  id: string;
+  name: string;
+  url: string;
+  type: WorkspaceAttachmentType;
+  addedBy: string; // member ID
+  addedAt: string; // ISO string
 }
 
 export interface Workspace {
@@ -38,6 +51,8 @@ export interface Workspace {
   members: WorkspaceMember[];
   tasks: GroupTask[];
   createdAt: string;
+  /** Shared resources (links, Google Drive refs). Optional for backward compat. */
+  attachments?: WorkspaceAttachment[];
 }
 
 // Out-of-band share payload: name + joinCode + members + tasks.

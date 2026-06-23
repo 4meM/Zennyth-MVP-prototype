@@ -50,6 +50,7 @@ export function WorkspaceBoard({ workspaceId }: WorkspaceBoardProps) {
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDeadlineDate, setNewDeadlineDate] = useState(todayStr());
+  const [newAssignee, setNewAssignee] = useState<string>("");
 
   if (!workspace) return null;
 
@@ -95,9 +96,11 @@ export function WorkspaceBoard({ workspaceId }: WorkspaceBoardProps) {
       : new Date(
           Date.now() + DEFAULT_DEADLINE_DAYS * 24 * 60 * 60 * 1000
         ).toISOString();
-    addGroupTask(workspaceId, trimmed, deadline, currentMemberId);
+    const assignedTo = newAssignee ? newAssignee : undefined;
+    addGroupTask(workspaceId, trimmed, deadline, currentMemberId, assignedTo);
     setNewTitle("");
     setNewDeadlineDate(todayStr());
+    setNewAssignee("");
     setAdding(false);
   };
 
@@ -105,6 +108,7 @@ export function WorkspaceBoard({ workspaceId }: WorkspaceBoardProps) {
     setAdding(false);
     setNewTitle("");
     setNewDeadlineDate(todayStr());
+    setNewAssignee("");
   };
 
   // ── Empty states ────────────────────────────────────────────
@@ -168,6 +172,19 @@ export function WorkspaceBoard({ workspaceId }: WorkspaceBoardProps) {
               aria-label="Fecha límite"
               className="rounded-xl bg-bg-subtle border border-border px-3 py-3 text-sm text-text-1 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all duration-200 min-h-[44px]"
             />
+            <select
+              value={newAssignee}
+              onChange={(e) => setNewAssignee(e.target.value)}
+              aria-label="Asignar a (opcional)"
+              className="rounded-xl bg-bg-subtle border border-border px-3 py-3 text-sm text-text-1 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all duration-200 min-h-[44px] cursor-pointer"
+            >
+              <option value="">Sin asignar</option>
+              {workspace.members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.id === currentMemberId ? `${m.name} (tú)` : m.name}
+                </option>
+              ))}
+            </select>
             <Button type="submit" size="sm" disabled={!newTitle.trim()}>
               Crear
             </Button>
