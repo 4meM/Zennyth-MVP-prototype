@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,27 +17,29 @@ import {
 } from "lucide-react";
 
 export function LandingHero() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [groupInterest, setGroupInterest] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleWaitlist = async () => {
     if (!email.includes("@") || loading) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, groupInterest }),
       });
+      if (!res.ok) throw new Error("No se pudo registrar el email");
       const data = await res.json();
-      setWaitlistCount(data.count);
+      setWaitlistCount(data.count ?? null);
       setSubmitted(true);
-    } catch {
-      // Silently fail - user can still try the app
+    } catch (err) {
+      setError("Error al enviar. Revisa tu conexión o prueba más tarde.");
     } finally {
       setLoading(false);
     }
@@ -53,13 +55,11 @@ export function LandingHero() {
           </div>
           <span className="text-lg font-bold text-text-1">Zennyth</span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/onboarding")}
-        >
-          Iniciar gratis
-          <ArrowRight className="w-3.5 h-3.5" />
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/onboarding">
+            Iniciar gratis
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </Button>
       </nav>
 
@@ -96,13 +96,11 @@ export function LandingHero() {
                     #{waitlistCount} en la waitlist
                   </p>
                 )}
-                <Button
-                  className="mt-3"
-                  size="sm"
-                  onClick={() => router.push("/onboarding")}
-                >
-                  Probar ahora
-                  <ArrowRight className="w-3.5 h-3.5" />
+                <Button className="mt-3" size="sm" asChild>
+                  <Link href="/onboarding">
+                    Probar ahora
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
                 </Button>
               </Card>
             ) : (
@@ -123,6 +121,9 @@ export function LandingHero() {
                 >
                   {loading ? "..." : "Unirme a la waitlist"}
                 </Button>
+                {error && (
+                  <p className="w-full text-xs text-danger text-center">{error}</p>
+                )}
               </>
             )}
           </div>
@@ -158,12 +159,12 @@ export function LandingHero() {
 
           <p className="text-xs text-text-3">
             O{" "}
-            <button
-              onClick={() => router.push("/onboarding")}
+            <Link
+              href="/onboarding"
               className="text-primary font-semibold hover:underline cursor-pointer"
             >
               prueba gratis ahora
-            </button>{" "}
+            </Link>{" "}
             sin necesidad de cuenta
           </p>
 

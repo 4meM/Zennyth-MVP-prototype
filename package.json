@@ -6,9 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "start:network": "next start -H 0.0.0.0",
+    "preview": "next build && next start",
+    "preview:network": "next build && next start -H 0.0.0.0",
     "lint": "next lint"
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@google/genai": "^1.30.0",
     "lucide-react": "^0.555.0",
     "next": "^15.3.3",
@@ -24,6 +28,7 @@
     "@types/react-dom": "^19.1.0",
     "postcss": "^8.5.4",
     "tailwindcss": "^4.1.8",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "webpack": "^5.108.4"
   }
 }
